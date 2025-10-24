@@ -41,6 +41,12 @@ const CloseIcon = () => (
   </svg>
 );
 
+const CheckIcon = () => (
+  <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12"></polyline>
+  </svg>
+);
+
 function App() {
   const [selected, setSelected] = useState('Home');
   const [email, setEmail] = useState('');
@@ -57,9 +63,20 @@ function App() {
   const [signUpError, setSignUpError] = useState('');
   const [loginError, setLoginError] = useState('');
 
+  // Toast notification state
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
   useEffect(() => {
     checkUser();
   }, []);
+
+  // Show toast notification
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: '', type: 'success' });
+    }, 4000);
+  };
 
   const checkUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -114,6 +131,7 @@ function App() {
         setUsername(userData.username);
         setSignedIn(true);
         setPassword('');
+        showToast('Welcome back! Successfully logged in.', 'success');
       }
     } catch (error) {
       setLoginError('An error occurred. Please try again.');
@@ -175,7 +193,8 @@ function App() {
         return;
       }
 
-      alert('Account created successfully! Please log in.');
+      // Show success toast instead of alert
+      showToast('Account created successfully! Please log in.', 'success');
       setIsSignUp(false);
       setEmail(signUpEmail);
       setSignUpUsername('');
@@ -195,6 +214,7 @@ function App() {
     setUsername('');
     setSelected('Home');
     setDrawerOpen(false);
+    showToast('Successfully logged out. See you soon!', 'success');
   };
 
   const handleNavClick = (page) => {
@@ -204,6 +224,17 @@ function App() {
 
   return (
     <div className="app-root">
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className={`toast ${toast.type}`}>
+          <CheckIcon />
+          <span>{toast.message}</span>
+          <button className="toast-close" onClick={() => setToast({ ...toast, show: false })}>
+            <CloseIcon />
+          </button>
+        </div>
+      )}
+
       <header className="app-bar">
         <button className="menu-button" onClick={() => setDrawerOpen(true)}>
           <span></span>
