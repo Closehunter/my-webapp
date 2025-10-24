@@ -107,7 +107,6 @@ function App() {
         <button className={`nav-btn ${selected === 'Home' ? 'active' : ''}`} onClick={() => setSelected('Home')}><HomeIcon /><span>Home</span></button>
         {signedIn && (<button className={`nav-btn ${selected === 'Profile' ? 'active' : ''}`} onClick={() => setSelected('Profile')}><ProfileIcon /><span>Profile</span></button>)}
         <button className={`nav-btn ${selected === 'Settings' ? 'active' : ''}`} onClick={() => setSelected('Settings')}><SettingsIcon /><span>Settings</span></button>
-        {signedIn && (<button className="nav-btn logout-btn" onClick={handleLogout}><LogoutIcon /><span>Logout</span></button>)}
       </aside>
       {drawerOpen && <div className="overlay" onClick={() => setDrawerOpen(false)}></div>}
       <nav className={`drawer ${drawerOpen ? 'open' : ''}`}>
@@ -115,7 +114,6 @@ function App() {
         <button className={`drawer-item ${selected === 'Home' ? 'active' : ''}`} onClick={() => handleNavClick('Home')}><HomeIcon /><span>Home</span></button>
         {signedIn && (<button className={`drawer-item ${selected === 'Profile' ? 'active' : ''}`} onClick={() => handleNavClick('Profile')}><ProfileIcon /><span>Profile</span></button>)}
         <button className={`drawer-item ${selected === 'Settings' ? 'active' : ''}`} onClick={() => handleNavClick('Settings')}><SettingsIcon /><span>Settings</span></button>
-        {signedIn && (<button className="drawer-item logout" onClick={handleLogout}><LogoutIcon /><span>Logout</span></button>)}
       </nav>
       <main className="main-content">
         {selected === 'Home' && !signedIn && !isSignUp && (
@@ -150,7 +148,14 @@ function App() {
           </form>
         )}
         {selected === 'Home' && signedIn && (<div className="welcome-section"><h1>Welcome back, {username}!</h1><p>Use the menu to navigate to your profile or settings.</p></div>)}
-        {selected === 'Profile' && (<div className="profile-card"><h2>Your Profile</h2><div className="profile-item"><span className="label">Username:</span><span className="value">{username}</span></div><div className="profile-item"><span className="label">Email:</span><span className="value">{email}</span></div></div>)}
+        {selected === 'Profile' && (
+          <div className="profile-card">
+            <h2>Your Profile</h2>
+            <div className="profile-item"><span className="label">Username:</span><span className="value">{username}</span></div>
+            <div className="profile-item"><span className="label">Email:</span><span className="value">{email}</span></div>
+            <button className="profile-logout-btn" onClick={handleLogout}><LogoutIcon /><span>Logout</span></button>
+          </div>
+        )}
         {selected === 'Settings' && (<div className="settings-section"><h2>Settings</h2><p>Settings features coming soon.</p></div>)}
       </main>
     </div>

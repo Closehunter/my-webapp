@@ -64,8 +64,6 @@ body {
 .nav-btn .icon { color: #e0e0e0; }
 .nav-btn:hover .icon { color: #ffffff; }
 .nav-btn.active .icon { color: #0f0f0f; }
-.logout-btn { margin-top: auto; background: #e84118 !important; border-color: #e84118 !important; color: #fff !important; }
-.logout-btn .icon { color: #fff !important; }
 
 .drawer { position: fixed; top: 0; left: -100%; width: 80%; max-width: 300px; height: 100vh; background: #1a1a2e; border-right: 1px solid #2a2a3e; transition: left 0.3s ease; z-index: 1001; display: flex; flex-direction: column; padding: 20px; }
 .drawer.open { left: 0; }
@@ -81,8 +79,6 @@ body {
 .drawer-item .icon { color: #e0e0e0; }
 .drawer-item:hover .icon { color: #ffffff; }
 .drawer-item.active .icon { color: #0f0f0f; }
-.drawer-item.logout { margin-top: auto; background: #e84118; border-color: #e84118; color: #fff; }
-.drawer-item.logout .icon { color: #fff; }
 
 .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 1000; }
 .main-content { grid-area: content; padding: 40px; overflow-y: auto; }
@@ -115,6 +111,35 @@ body {
 .profile-item:last-child { border-bottom: none; }
 .profile-item .label { color: #9a9a9a; font-weight: 600; }
 .profile-item .value { color: #e0e0e0; }
+
+.profile-logout-btn {
+  margin-top: 20px;
+  padding: 8px 16px;
+  background: #e84118;
+  border: 1px solid #e84118;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  width: fit-content;
+}
+
+.profile-logout-btn:hover {
+  background: #c23616;
+  border-color: #c23616;
+  transform: translateY(-2px);
+}
+
+.profile-logout-btn .icon {
+  width: 16px;
+  height: 16px;
+  color: #fff;
+}
 
 .settings-section { max-width: 800px; margin: 40px auto; background: #1a1a2e; padding: 40px; border-radius: 16px; border: 1px solid #2a2a3e; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
 .settings-section h2 { color: #61dafb; margin-bottom: 16px; font-size: 28px; }
