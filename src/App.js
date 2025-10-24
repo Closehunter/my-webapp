@@ -184,25 +184,29 @@ function App() {
           className={`nav-btn ${selected === 'Home' ? 'active' : ''}`}
           onClick={() => setSelected('Home')}
         >
-          Home
+          <span className="icon">🏠</span>
+          <span>Home</span>
         </button>
         {signedIn && (
           <button 
             className={`nav-btn ${selected === 'Profile' ? 'active' : ''}`}
             onClick={() => setSelected('Profile')}
           >
-            Profile
+            <span className="icon">👤</span>
+            <span>Profile</span>
           </button>
         )}
         <button 
           className={`nav-btn ${selected === 'Settings' ? 'active' : ''}`}
           onClick={() => setSelected('Settings')}
         >
-          Settings
+          <span className="icon">⚙️</span>
+          <span>Settings</span>
         </button>
         {signedIn && (
           <button className="nav-btn logout-btn" onClick={handleLogout}>
-            Logout
+            <span className="icon">🚪</span>
+            <span>Logout</span>
           </button>
         )}
       </aside>
@@ -218,25 +222,29 @@ function App() {
           className={`drawer-item ${selected === 'Home' ? 'active' : ''}`}
           onClick={() => handleNavClick('Home')}
         >
-          Home
+          <span className="icon">🏠</span>
+          <span>Home</span>
         </button>
         {signedIn && (
           <button 
             className={`drawer-item ${selected === 'Profile' ? 'active' : ''}`}
             onClick={() => handleNavClick('Profile')}
           >
-            Profile
+            <span className="icon">👤</span>
+            <span>Profile</span>
           </button>
         )}
         <button 
           className={`drawer-item ${selected === 'Settings' ? 'active' : ''}`}
           onClick={() => handleNavClick('Settings')}
         >
-          Settings
+          <span className="icon">⚙️</span>
+          <span>Settings</span>
         </button>
         {signedIn && (
           <button className="drawer-item logout" onClick={handleLogout}>
-            Logout
+            <span className="icon">🚪</span>
+            <span>Logout</span>
           </button>
         )}
       </nav>
