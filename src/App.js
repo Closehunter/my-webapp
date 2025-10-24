@@ -9,7 +9,7 @@ function App() {
   const [username, setUsername] = useState('');
   const [signedIn, setSignedIn] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const [signUpUsername, setSignUpUsername] = useState('');
   const [signUpEmail, setSignUpEmail] = useState('');
@@ -155,36 +155,95 @@ function App() {
     setPassword('');
     setUsername('');
     setSelected('Home');
-    setMenuOpen(false);
+    setDrawerOpen(false);
   };
 
-  const handleMenuClick = (page) => {
+  const handleNavClick = (page) => {
     setSelected(page);
-    setMenuOpen(false);
+    setDrawerOpen(false);
   };
 
   return (
-    <div className="container">
-      <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)}>
-        ☰
-      </button>
-
-      <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
-        <button onClick={() => handleMenuClick('Home')}>Home</button>
-        {signedIn && <button onClick={() => handleMenuClick('Profile')}>Profile</button>}
-        <button onClick={() => handleMenuClick('Settings')}>Settings</button>
+    <div className="app-root">
+      <header className="app-bar">
+        <button className="menu-button" onClick={() => setDrawerOpen(true)}>
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <h1 className="app-title">My Webapp</h1>
         {signedIn && (
-          <button className="logout-btn" onClick={handleLogout}>
+          <div className="user-avatar">
+            {username.charAt(0).toUpperCase()}
+          </div>
+        )}
+      </header>
+
+      <aside className="sidebar-desktop">
+        <button 
+          className={`nav-btn ${selected === 'Home' ? 'active' : ''}`}
+          onClick={() => setSelected('Home')}
+        >
+          Home
+        </button>
+        {signedIn && (
+          <button 
+            className={`nav-btn ${selected === 'Profile' ? 'active' : ''}`}
+            onClick={() => setSelected('Profile')}
+          >
+            Profile
+          </button>
+        )}
+        <button 
+          className={`nav-btn ${selected === 'Settings' ? 'active' : ''}`}
+          onClick={() => setSelected('Settings')}
+        >
+          Settings
+        </button>
+        {signedIn && (
+          <button className="nav-btn logout-btn" onClick={handleLogout}>
             Logout
           </button>
         )}
       </aside>
 
-      {menuOpen && <div className="overlay" onClick={() => setMenuOpen(false)}></div>}
+      {drawerOpen && <div className="overlay" onClick={() => setDrawerOpen(false)}></div>}
 
-      <main className="main">
+      <nav className={`drawer ${drawerOpen ? 'open' : ''}`}>
+        <div className="drawer-header">
+          <h2>Menu</h2>
+          <button className="close-btn" onClick={() => setDrawerOpen(false)}>✕</button>
+        </div>
+        <button 
+          className={`drawer-item ${selected === 'Home' ? 'active' : ''}`}
+          onClick={() => handleNavClick('Home')}
+        >
+          Home
+        </button>
+        {signedIn && (
+          <button 
+            className={`drawer-item ${selected === 'Profile' ? 'active' : ''}`}
+            onClick={() => handleNavClick('Profile')}
+          >
+            Profile
+          </button>
+        )}
+        <button 
+          className={`drawer-item ${selected === 'Settings' ? 'active' : ''}`}
+          onClick={() => handleNavClick('Settings')}
+        >
+          Settings
+        </button>
+        {signedIn && (
+          <button className="drawer-item logout" onClick={handleLogout}>
+            Logout
+          </button>
+        )}
+      </nav>
+
+      <main className="main-content">
         {selected === 'Home' && !signedIn && !isSignUp && (
-          <form onSubmit={handleLogin} className="log-in-form">
+          <form onSubmit={handleLogin} className="auth-form">
             <h2>Log In</h2>
             <input
               type="email"
@@ -192,17 +251,17 @@ function App() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-            /><br />
+            />
             <input
               type="password"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-            /><br />
-            {loginError && <p className="error-message">{loginError}</p>}
-            <button type="submit">Log In</button>
-            <p className="toggle-auth">
+            />
+            {loginError && <p className="error-msg">{loginError}</p>}
+            <button type="submit" className="submit-btn">Log In</button>
+            <p className="toggle-text">
               Don't have an account?{' '}
               <span onClick={() => setIsSignUp(true)}>Sign Up</span>
             </p>
@@ -210,7 +269,7 @@ function App() {
         )}
 
         {selected === 'Home' && !signedIn && isSignUp && (
-          <form onSubmit={handleSignUp} className="log-in-form">
+          <form onSubmit={handleSignUp} className="auth-form">
             <h2>Sign Up</h2>
             <input
               type="text"
@@ -218,48 +277,64 @@ function App() {
               value={signUpUsername}
               onChange={(e) => setSignUpUsername(e.target.value)}
               required
-            /><br />
+            />
             <input
               type="email"
               placeholder="Email"
               value={signUpEmail}
               onChange={(e) => setSignUpEmail(e.target.value)}
               required
-            /><br />
+            />
             <input
               type="password"
               placeholder="Password"
               value={signUpPassword}
               onChange={(e) => setSignUpPassword(e.target.value)}
               required
-            /><br />
+            />
             <input
               type="password"
               placeholder="Confirm Password"
               value={signUpConfirmPassword}
               onChange={(e) => setSignUpConfirmPassword(e.target.value)}
               required
-            /><br />
-            {signUpError && <p className="error-message">{signUpError}</p>}
-            <button type="submit">Sign Up</button>
-            <p className="toggle-auth">
+            />
+            {signUpError && <p className="error-msg">{signUpError}</p>}
+            <button type="submit" className="submit-btn">Sign Up</button>
+            <p className="toggle-text">
               Already have an account?{' '}
               <span onClick={() => setIsSignUp(false)}>Log In</span>
             </p>
           </form>
         )}
 
-        {selected === 'Home' && signedIn && <h1>Welcome back, {username}!</h1>}
+        {selected === 'Home' && signedIn && (
+          <div className="welcome-section">
+            <h1>Welcome back, {username}!</h1>
+            <p>Use the menu to navigate to your profile or settings.</p>
+          </div>
+        )}
+
         {selected === 'Profile' && (
-          <div className="profile-section">
-            <h1>Your Profile</h1>
-            <div className="profile-info">
-              <p><strong>Username:</strong> {username}</p>
-              <p><strong>Email:</strong> {email}</p>
+          <div className="profile-card">
+            <h2>Your Profile</h2>
+            <div className="profile-item">
+              <span className="label">Username:</span>
+              <span className="value">{username}</span>
+            </div>
+            <div className="profile-item">
+              <span className="label">Email:</span>
+              <span className="value">{email}</span>
             </div>
           </div>
         )}
-        {selected === 'Settings' && <h1>Settings Panel</h1>}
+
+        {selected === 'Settings' && (
+          <div className="settings-section">
+            <h2>Settings</h2>
+            <p>Settings features coming soon.</p>
+          </div>
+        )}
       </main>
     </div>
   );
