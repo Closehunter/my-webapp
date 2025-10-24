@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import { supabase } from './supabaseClient';
-import bcrypt from 'bcryptjs';
 
 function App() {
   const [selected, setSelected] = useState('Home');
@@ -10,6 +9,7 @@ function App() {
   const [username, setUsername] = useState('');
   const [signedIn, setSignedIn] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [userId, setUserId] = useState(null);
 
   const [signUpUsername, setSignUpUsername] = useState('');
   const [signUpEmail, setSignUpEmail] = useState('');
@@ -18,41 +18,70 @@ function App() {
   const [signUpError, setSignUpError] = useState('');
   const [loginError, setLoginError] = useState('');
 
+  // Check if user is already logged in on page load
+  useEffect(() => {
+    checkUser();
+  }, []);
+
+  const checkUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const user = session.user;
+      setUserId(user.id);
+      setEmail(user.email);
+      
+      // Get username from custom users table
+      const { data: userData } = await supabase
+        .from('users')
+        .select('username')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (userData) {
+        setUsername(userData.username);
+        setSignedIn(true);
+      }
+    }
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoginError('');
 
     try {
-      const { data: users, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
 
       if (error) {
-        setLoginError('Unable to connect to database. Please try again.');
+        if (error.message.includes('Invalid login credentials')) {
+          setLoginError('Incorrect email or password. Please try again.');
+        } else if (error.message.includes('Email not confirmed')) {
+          setLoginError('Please verify your email address first.');
+        } else {
+          setLoginError(error.message);
+        }
         return;
       }
 
-      if (!users || users.length === 0) {
-        setLoginError('No account found with this email address.');
-        return;
-      }
-
-      const user = users[0];
-
-      // Compare password with hashed password
-      const passwordMatch = await bcrypt.compare(password, user.password);
-
-      if (!passwordMatch) {
-        setLoginError('Incorrect password. Please try again.');
-        return;
-      }
-
-      setSignedIn(true);
-      setUsername(user.username);
+      const user = data.user;
+      setUserId(user.id);
       setEmail(user.email);
-      setPassword('');
-    } catch {
+
+      // Get username from custom users table
+      const { data: userData } = await supabase
+        .from('users')
+        .select('username')
+        .eq('user_id', user.id)
+        .single();
+
+      if (userData) {
+        setUsername(userData.username);
+        setSignedIn(true);
+        setPassword('');
+      }
+    } catch (error) {
       setLoginError('An error occurred. Please try again.');
     }
   };
@@ -72,26 +101,41 @@ function App() {
     }
 
     try {
-      const { data: existing } = await supabase
+      // Check if username is already taken
+      const { data: existingUsername } = await supabase
         .from('users')
-        .select('email')
-        .eq('email', signUpEmail);
+        .select('username')
+        .eq('username', signUpUsername);
 
-      if (existing && existing.length > 0) {
-        setSignUpError('An account with this email already exists.');
+      if (existingUsername && existingUsername.length > 0) {
+        setSignUpError('Username is already taken. Please choose another.');
         return;
       }
 
-      // Hash password before storing
-      const hashedPassword = await bcrypt.hash(signUpPassword, 10);
+      // Sign up with Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email: signUpEmail,
+        password: signUpPassword,
+      });
 
+      if (error) {
+        if (error.message.includes('already registered')) {
+          setSignUpError('An account with this email already exists.');
+        } else {
+          setSignUpError(error.message);
+        }
+        return;
+      }
+
+      const user = data.user;
+
+      // Store username in custom users table
       const { error: insertError } = await supabase
         .from('users')
         .insert([
           {
+            user_id: user.id,
             username: signUpUsername,
-            email: signUpEmail,
-            password: hashedPassword,
           },
         ]);
 
@@ -107,16 +151,18 @@ function App() {
       setSignUpEmail('');
       setSignUpPassword('');
       setSignUpConfirmPassword('');
-    } catch {
+    } catch (error) {
       setSignUpError('An error occurred. Please try again.');
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setSignedIn(false);
     setEmail('');
     setPassword('');
     setUsername('');
+    setUserId(null);
     setSelected('Home');
   };
 
