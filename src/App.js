@@ -2,6 +2,45 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import { supabase } from './supabaseClient';
 
+// SVG Icon Components
+const HomeIcon = () => (
+  <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+  </svg>
+);
+
+const ProfileIcon = () => (
+  <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+    <circle cx="12" cy="7" r="4"></circle>
+  </svg>
+);
+
+const SettingsIcon = () => (
+  <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3"></circle>
+    <path d="M12 1v6m0 6v6"></path>
+    <path d="M16.24 7.76l-2.12 2.12m-4.24 4.24l-2.12 2.12"></path>
+    <path d="M7.76 7.76l2.12 2.12m4.24 4.24l2.12 2.12"></path>
+  </svg>
+);
+
+const LogoutIcon = () => (
+  <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+    <polyline points="16 17 21 12 16 7"></polyline>
+    <line x1="21" y1="12" x2="9" y2="12"></line>
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"></line>
+    <line x1="6" y1="6" x2="18" y2="18"></line>
+  </svg>
+);
+
 function App() {
   const [selected, setSelected] = useState('Home');
   const [email, setEmail] = useState('');
@@ -184,7 +223,7 @@ function App() {
           className={`nav-btn ${selected === 'Home' ? 'active' : ''}`}
           onClick={() => setSelected('Home')}
         >
-          <span className="icon">🏠</span>
+          <HomeIcon />
           <span>Home</span>
         </button>
         {signedIn && (
@@ -192,7 +231,7 @@ function App() {
             className={`nav-btn ${selected === 'Profile' ? 'active' : ''}`}
             onClick={() => setSelected('Profile')}
           >
-            <span className="icon">👤</span>
+            <ProfileIcon />
             <span>Profile</span>
           </button>
         )}
@@ -200,12 +239,12 @@ function App() {
           className={`nav-btn ${selected === 'Settings' ? 'active' : ''}`}
           onClick={() => setSelected('Settings')}
         >
-          <span className="icon">⚙️</span>
+          <SettingsIcon />
           <span>Settings</span>
         </button>
         {signedIn && (
           <button className="nav-btn logout-btn" onClick={handleLogout}>
-            <span className="icon">🚪</span>
+            <LogoutIcon />
             <span>Logout</span>
           </button>
         )}
@@ -216,13 +255,15 @@ function App() {
       <nav className={`drawer ${drawerOpen ? 'open' : ''}`}>
         <div className="drawer-header">
           <h2>Menu</h2>
-          <button className="close-btn" onClick={() => setDrawerOpen(false)}>✕</button>
+          <button className="close-btn" onClick={() => setDrawerOpen(false)}>
+            <CloseIcon />
+          </button>
         </div>
         <button 
           className={`drawer-item ${selected === 'Home' ? 'active' : ''}`}
           onClick={() => handleNavClick('Home')}
         >
-          <span className="icon">🏠</span>
+          <HomeIcon />
           <span>Home</span>
         </button>
         {signedIn && (
@@ -230,7 +271,7 @@ function App() {
             className={`drawer-item ${selected === 'Profile' ? 'active' : ''}`}
             onClick={() => handleNavClick('Profile')}
           >
-            <span className="icon">👤</span>
+            <ProfileIcon />
             <span>Profile</span>
           </button>
         )}
@@ -238,12 +279,12 @@ function App() {
           className={`drawer-item ${selected === 'Settings' ? 'active' : ''}`}
           onClick={() => handleNavClick('Settings')}
         >
-          <span className="icon">⚙️</span>
+          <SettingsIcon />
           <span>Settings</span>
         </button>
         {signedIn && (
           <button className="drawer-item logout" onClick={handleLogout}>
-            <span className="icon">🚪</span>
+            <LogoutIcon />
             <span>Logout</span>
           </button>
         )}

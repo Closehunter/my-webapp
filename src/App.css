@@ -104,15 +104,35 @@ body {
   border-color: #61dafb;
 }
 
-.nav-btn .icon {
-  font-size: 20px;
+/* SVG Icon Styles */
+.icon {
+  width: 20px;
+  height: 20px;
   display: inline-block;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.nav-btn .icon {
+  color: #e0e0e0;
+}
+
+.nav-btn:hover .icon {
+  color: #ffffff;
+}
+
+.nav-btn.active .icon {
+  color: #0f0f0f;
 }
 
 .logout-btn {
   margin-top: auto;
   background: #e84118 !important;
   border-color: #e84118 !important;
+  color: #fff !important;
+}
+
+.logout-btn .icon {
   color: #fff !important;
 }
 
@@ -157,9 +177,22 @@ body {
   color: #e0e0e0;
   font-size: 28px;
   cursor: pointer;
-  padding: 0;
+  padding: 4px;
   width: 32px;
   height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  color: #61dafb;
+}
+
+.close-btn .icon {
+  width: 24px;
+  height: 24px;
 }
 
 .drawer-item {
@@ -189,14 +222,25 @@ body {
 }
 
 .drawer-item .icon {
-  font-size: 20px;
-  display: inline-block;
+  color: #e0e0e0;
+}
+
+.drawer-item:hover .icon {
+  color: #ffffff;
+}
+
+.drawer-item.active .icon {
+  color: #0f0f0f;
 }
 
 .drawer-item.logout {
   margin-top: auto;
   background: #e84118;
   border-color: #e84118;
+  color: #fff;
+}
+
+.drawer-item.logout .icon {
   color: #fff;
 }
 
