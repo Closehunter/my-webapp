@@ -9,6 +9,7 @@ function App() {
   const [username, setUsername] = useState('');
   const [signedIn, setSignedIn] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const [signUpUsername, setSignUpUsername] = useState('');
   const [signUpEmail, setSignUpEmail] = useState('');
@@ -154,20 +155,33 @@ function App() {
     setPassword('');
     setUsername('');
     setSelected('Home');
+    setMenuOpen(false);
+  };
+
+  const handleMenuClick = (page) => {
+    setSelected(page);
+    setMenuOpen(false);
   };
 
   return (
     <div className="container">
-      <aside className="sidebar">
-        <button onClick={() => setSelected('Home')}>Home</button>
-        {signedIn && <button onClick={() => setSelected('Profile')}>Profile</button>}
-        <button onClick={() => setSelected('Settings')}>Settings</button>
+      <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)}>
+        ☰
+      </button>
+
+      <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
+        <button onClick={() => handleMenuClick('Home')}>Home</button>
+        {signedIn && <button onClick={() => handleMenuClick('Profile')}>Profile</button>}
+        <button onClick={() => handleMenuClick('Settings')}>Settings</button>
         {signedIn && (
           <button className="logout-btn" onClick={handleLogout}>
             Logout
           </button>
         )}
       </aside>
+
+      {menuOpen && <div className="overlay" onClick={() => setMenuOpen(false)}></div>}
+
       <main className="main">
         {selected === 'Home' && !signedIn && !isSignUp && (
           <form onSubmit={handleLogin} className="log-in-form">
