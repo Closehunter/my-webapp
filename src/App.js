@@ -9,7 +9,6 @@ function App() {
   const [username, setUsername] = useState('');
   const [signedIn, setSignedIn] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
-  const [userId, setUserId] = useState(null);
 
   const [signUpUsername, setSignUpUsername] = useState('');
   const [signUpEmail, setSignUpEmail] = useState('');
@@ -18,7 +17,6 @@ function App() {
   const [signUpError, setSignUpError] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  // Check if user is already logged in on page load
   useEffect(() => {
     checkUser();
   }, []);
@@ -27,10 +25,8 @@ function App() {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
       const user = session.user;
-      setUserId(user.id);
       setEmail(user.email);
       
-      // Get username from custom users table
       const { data: userData } = await supabase
         .from('users')
         .select('username')
@@ -66,10 +62,8 @@ function App() {
       }
 
       const user = data.user;
-      setUserId(user.id);
       setEmail(user.email);
 
-      // Get username from custom users table
       const { data: userData } = await supabase
         .from('users')
         .select('username')
@@ -101,7 +95,6 @@ function App() {
     }
 
     try {
-      // Check if username is already taken
       const { data: existingUsername } = await supabase
         .from('users')
         .select('username')
@@ -112,7 +105,6 @@ function App() {
         return;
       }
 
-      // Sign up with Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email: signUpEmail,
         password: signUpPassword,
@@ -129,7 +121,6 @@ function App() {
 
       const user = data.user;
 
-      // Store username in custom users table
       const { error: insertError } = await supabase
         .from('users')
         .insert([
@@ -162,7 +153,6 @@ function App() {
     setEmail('');
     setPassword('');
     setUsername('');
-    setUserId(null);
     setSelected('Home');
   };
 
