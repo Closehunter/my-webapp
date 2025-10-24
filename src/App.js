@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './App.css';
 import { supabase } from './supabaseClient';
+import bcrypt from 'bcryptjs';
 
 function App() {
   const [selected, setSelected] = useState('Home');
@@ -39,7 +40,10 @@ function App() {
 
       const user = users[0];
 
-      if (user.password !== password) {
+      // Compare password with hashed password
+      const passwordMatch = await bcrypt.compare(password, user.password);
+
+      if (!passwordMatch) {
         setLoginError('Incorrect password. Please try again.');
         return;
       }
@@ -78,13 +82,16 @@ function App() {
         return;
       }
 
+      // Hash password before storing
+      const hashedPassword = await bcrypt.hash(signUpPassword, 10);
+
       const { error: insertError } = await supabase
         .from('users')
         .insert([
           {
             username: signUpUsername,
             email: signUpEmail,
-            password: signUpPassword,
+            password: hashedPassword,
           },
         ]);
 
