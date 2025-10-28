@@ -924,11 +924,12 @@ function App() {
                       <span className="value">{email}</span>
                     </div>
                     <div className="profile-actions-row">
-                      <button className="profile-logout-btn" onClick={handleLogout}>
-                        <LogoutIcon /> Logout
-                      </button>
+                      {/* Swapped order: Edit first, then Logout */}
                       <button className="edit-profile-btn" onClick={enterEditMode}>
                         <EditIcon /> Edit Profile
+                      </button>
+                      <button className="profile-logout-btn" onClick={handleLogout}>
+                        <LogoutIcon /> Logout
                       </button>
                     </div>
                   </div>
