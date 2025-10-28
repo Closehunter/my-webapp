@@ -106,8 +106,8 @@ function App() {
         setProfileError('Please select an image file (JPEG or PNG).');
         return;
       }
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        setProfileError('Image size must be less than 5MB.');
+      if (file.size > 15 * 1024 * 1024) { // Increased to 15MB limit
+        setProfileError('Image size must be less than 15MB.');
         return;
       }
       const reader = new FileReader();
@@ -129,8 +129,8 @@ function App() {
         setSignUpError('Please select an image file (JPEG or PNG).');
         return;
       }
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        setSignUpError('Image size must be less than 5MB.');
+      if (file.size > 15 * 1024 * 1024) { // Increased to 15MB limit
+        setSignUpError('Image size must be less than 15MB.');
         return;
       }
       const reader = new FileReader();
@@ -264,7 +264,21 @@ function App() {
       }
       const userId = session.user.id;
       if (profileLogoFile) {
-        // Upload/replace logo with unique filename to avoid policy conflicts on existing files
+        // Delete old logo if exists
+        if (logoUrl) {
+          const oldFileName = logoUrl.split('/').pop(); // Extract filename from URL
+          if (oldFileName) {
+            const { error: deleteError } = await supabase.storage
+              .from('company-logos')
+              .remove([oldFileName]);
+            if (deleteError) {
+              console.warn('Failed to delete old logo:', deleteError); // Warn but don't fail
+            } else {
+              console.log('Old logo deleted successfully:', oldFileName);
+            }
+          }
+        }
+        // Upload new logo with unique filename to avoid policy conflicts
         const timestamp = Date.now();
         const fileName = `${userId}/logo-${timestamp}.png`;
         const { error: uploadError } = await supabase.storage
@@ -447,7 +461,7 @@ function App() {
       const user = data.user;
       let logoUrlToSave = null;
       if (logoFile) {
-        // Upload logo to Supabase Storage
+        // Upload logo to Supabase Storage (new user, no old to delete)
         const fileName = `${user.id}/logo.png`; // Always PNG after crop
         const { error: uploadError } = await supabase.storage
           .from('company-logos')
@@ -712,7 +726,7 @@ function App() {
                   onChange={(e) => setSignUpCompanyName(e.target.value)}
                   required
                 />
-                {/* Updated logo upload section with ref for mobile */}
+                {/* Updated logo upload section with ref for mobile and 15MB limit */}
                 <div className="logo-upload">
                   <label htmlFor="logo-upload" className="logo-label">
                     Company Logo (Optional)
@@ -738,7 +752,7 @@ function App() {
                       <div className="logo-placeholder">
                         <div className="logo-icon">📷</div>
                         <p>Click to upload or drag and drop your company logo</p>
-                        <small>JPEG/PNG, max 5MB</small>
+                        <small>JPEG/PNG, max 15MB</small>
                       </div>
                     )}
                   </div>
@@ -846,7 +860,7 @@ function App() {
                             <div className="logo-placeholder">
                               <div className="logo-icon">📷</div>
                               <p>Click to upload new logo</p>
-                              <small>JPEG/PNG, max 5MB</small>
+                              <small>JPEG/PNG, max 15MB</small>
                             </div>
                           )}
                         </div>
