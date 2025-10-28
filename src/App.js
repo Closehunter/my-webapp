@@ -106,8 +106,8 @@ function App() {
         setProfileError('Please select an image file (JPEG or PNG).');
         return;
       }
-      if (file.size > 15 * 1024 * 1024) { // Increased to 15MB limit
-        setProfileError('Image size must be less than 15MB.');
+      if (file.size > 15 * 1024 * 1024) { // 15MB limit
+        setProfileError('Image size must be less than 15MB. Please select a smaller file.');
         return;
       }
       const reader = new FileReader();
@@ -129,8 +129,8 @@ function App() {
         setSignUpError('Please select an image file (JPEG or PNG).');
         return;
       }
-      if (file.size > 15 * 1024 * 1024) { // Increased to 15MB limit
-        setSignUpError('Image size must be less than 15MB.');
+      if (file.size > 15 * 1024 * 1024) { // 15MB limit
+        setSignUpError('Image size must be less than 15MB. Please select a smaller file.');
         return;
       }
       const reader = new FileReader();
@@ -188,13 +188,19 @@ function App() {
   }, []);
 
 
-  // Updated handleCropConfirm for both modes
+  // Updated handleCropConfirm for both modes with post-crop size check
   const handleCropConfirm = async () => {
     try {
       let croppedImageBlob, croppedFile, previewUrl;
       if (editMode) {
         if (!profileCroppedAreaPixels || !profileImageSrc) return;
         croppedImageBlob = await createCroppedImage(profileImageSrc, profileCroppedAreaPixels);
+        // New: Check cropped blob size
+        if (croppedImageBlob.size > 15 * 1024 * 1024) {
+          setProfileError('Cropped image exceeds 15MB limit. Please crop a smaller area or select a smaller original image.');
+          return;
+        }
+        console.log('Profile cropped blob size:', croppedImageBlob.size / (1024 * 1024), 'MB'); // Debug log
         croppedFile = new File([croppedImageBlob], 'logo.png', { type: 'image/png' });
         setProfileLogoFile(croppedFile);
         previewUrl = URL.createObjectURL(croppedImageBlob);
@@ -202,6 +208,12 @@ function App() {
       } else {
         if (!croppedAreaPixels || !imageSrc) return;
         croppedImageBlob = await createCroppedImage(imageSrc, croppedAreaPixels);
+        // New: Check cropped blob size
+        if (croppedImageBlob.size > 15 * 1024 * 1024) {
+          setSignUpError('Cropped image exceeds 15MB limit. Please crop a smaller area or select a smaller original image.');
+          return;
+        }
+        console.log('Sign-up cropped blob size:', croppedImageBlob.size / (1024 * 1024), 'MB'); // Debug log
         croppedFile = new File([croppedImageBlob], 'logo.png', { type: 'image/png' });
         setLogoFile(croppedFile);
         previewUrl = URL.createObjectURL(croppedImageBlob);
@@ -289,7 +301,7 @@ function App() {
           });
         if (uploadError) {
           console.error('Upload error details:', uploadError); // Log for debugging
-          setProfileError(`Error uploading logo: ${uploadError.message || 'Please try again.'}`);
+          setProfileError(`Error uploading logo: ${uploadError.message || 'Please try again. Check Supabase storage policies for size limits.'}`);
           return;
         }
         const { data: publicUrlData } = supabase.storage
@@ -471,7 +483,7 @@ function App() {
           });
         if (uploadError) {
           console.error('Sign-up upload error details:', uploadError); // Log for debugging
-          setSignUpError(`Error uploading logo: ${uploadError.message || 'Please try again.'}`);
+          setSignUpError(`Error uploading logo: ${uploadError.message || 'Please try again. Check Supabase storage policies for size limits.'}`);
           return;
         }
         const { data: publicUrlData } = supabase.storage
