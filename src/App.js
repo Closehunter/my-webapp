@@ -106,7 +106,7 @@ function App() {
         setProfileError('Please select an image file (JPEG or PNG).');
         return;
       }
-      if (file.size > 50 * 1024 * 1024) { // Increased to 50MB limit
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit
         setProfileError('Image size must be less than 50MB. Please select a smaller file.');
         return;
       }
@@ -129,7 +129,7 @@ function App() {
         setSignUpError('Please select an image file (JPEG or PNG).');
         return;
       }
-      if (file.size > 50 * 1024 * 1024) { // Increased to 50MB limit
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit
         setSignUpError('Image size must be less than 50MB. Please select a smaller file.');
         return;
       }
@@ -195,7 +195,7 @@ function App() {
       if (editMode) {
         if (!profileCroppedAreaPixels || !profileImageSrc) return;
         croppedImageBlob = await createCroppedImage(profileImageSrc, profileCroppedAreaPixels);
-        // Updated: Check cropped blob size to 50MB
+        // Check cropped blob size
         if (croppedImageBlob.size > 50 * 1024 * 1024) {
           setProfileError('Cropped image exceeds 50MB limit. Please crop a smaller area or select a smaller original image.');
           return;
@@ -208,7 +208,7 @@ function App() {
       } else {
         if (!croppedAreaPixels || !imageSrc) return;
         croppedImageBlob = await createCroppedImage(imageSrc, croppedAreaPixels);
-        // Updated: Check cropped blob size to 50MB
+        // Check cropped blob size
         if (croppedImageBlob.size > 50 * 1024 * 1024) {
           setSignUpError('Cropped image exceeds 50MB limit. Please crop a smaller area or select a smaller original image.');
           return;
@@ -276,18 +276,23 @@ function App() {
       }
       const userId = session.user.id;
       if (profileLogoFile) {
-        // Delete old logo if exists
+        // Delete old logo if exists (fixed: extract full path)
         if (logoUrl) {
-          const oldFileName = logoUrl.split('/').pop(); // Extract filename from URL
-          if (oldFileName) {
+          // Parse full path from Supabase public URL: after /public/company-logos/
+          const urlParts = logoUrl.split('/public/company-logos/');
+          const oldPath = urlParts.length > 1 ? urlParts[1] : null;
+          if (oldPath) {
+            console.log('Attempting to delete old logo path:', oldPath); // Debug log
             const { error: deleteError } = await supabase.storage
               .from('company-logos')
-              .remove([oldFileName]);
+              .remove([oldPath]);
             if (deleteError) {
-              console.warn('Failed to delete old logo:', deleteError); // Warn but don't fail
+              console.warn('Failed to delete old logo:', deleteError.message || deleteError, 'Path:', oldPath); // Warn but don't fail
             } else {
-              console.log('Old logo deleted successfully:', oldFileName);
+              console.log('Old logo deleted successfully:', oldPath);
             }
+          } else {
+            console.warn('Could not parse old logo path from URL:', logoUrl);
           }
         }
         // Upload new logo with unique filename to avoid policy conflicts
