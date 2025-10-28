@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react'; // Added useRef
 import Cropper from 'react-easy-crop'; // New import for cropping
 import './App.css';
 import { supabase } from './supabaseClient';
+
 
 // Placeholder icons (no emojis, styled via CSS) - except for eye toggles and settings
 const DashboardIcon = () => <div className="icon-placeholder"></div>; // New icon for Dashboard
@@ -17,6 +18,7 @@ const EyeIcon = () => <div>👁️</div>; // Restored emoji for password toggle
 const EyeOffIcon = () => <div>👁️‍🗨️</div>; // Restored emoji for password toggle
 const SettingsIcon = () => <div className="settings-emoji">⚙️</div>; // Emoji for app bar settings
 const EditIcon = () => <div className="icon-placeholder"></div>; // New icon for edit button
+
 
 function App() {
   const [selected, setSelected] = useState('Dashboard'); // Updated default to Dashboard
@@ -62,6 +64,11 @@ function App() {
   const [profileZoom, setProfileZoom] = useState(1);
   const [profileError, setProfileError] = useState('');
 
+  // New refs for file inputs to improve mobile compatibility
+  const logoInputRef = useRef(null);
+  const profileLogoInputRef = useRef(null);
+
+
   useEffect(() => {
     // Inline checkUser logic to avoid ESLint dependency warning
     const checkUser = async () => {
@@ -90,6 +97,7 @@ function App() {
     checkUser();
   }, []); // Empty array for mount-only execution
 
+
   // New handler for logo file selection in profile - opens cropper if valid
   const handleProfileLogoChange = (e) => {
     const file = e.target.files[0];
@@ -111,6 +119,7 @@ function App() {
       setProfileError('');
     }
   };
+
 
   // Handler for logo file selection in sign-up
   const handleLogoChange = (e) => {
@@ -134,6 +143,7 @@ function App() {
     }
   };
 
+
   // Updated onCropComplete to handle both sign-up and profile
   const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
     if (editMode) {
@@ -143,31 +153,40 @@ function App() {
     }
   }, [editMode]);
 
-  // Updated createCroppedImage for reuse
+
+  // Updated createCroppedImage to await image load for mobile compatibility
   const createCroppedImage = useCallback(async (imageSrc, pixelCrop) => {
-    const image = new Image();
-    image.src = imageSrc;
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = pixelCrop.width;
-    canvas.height = pixelCrop.height;
-    ctx.drawImage(
-      image,
-      pixelCrop.x,
-      pixelCrop.y,
-      pixelCrop.width,
-      pixelCrop.height,
-      0,
-      0,
-      pixelCrop.width,
-      pixelCrop.height
-    );
-    return new Promise((resolve) => {
-      canvas.toBlob((blob) => {
-        resolve(blob);
-      }, 'image/png', 0.8);
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = pixelCrop.width;
+        canvas.height = pixelCrop.height;
+        ctx.drawImage(
+          image,
+          pixelCrop.x,
+          pixelCrop.y,
+          pixelCrop.width,
+          pixelCrop.height,
+          0,
+          0,
+          pixelCrop.width,
+          pixelCrop.height
+        );
+        canvas.toBlob((blob) => {
+          if (!blob || blob.size === 0) {
+            reject(new Error('Canvas produced empty blob'));
+            return;
+          }
+          resolve(blob);
+        }, 'image/png', 0.8);
+      };
+      image.onerror = () => reject(new Error('Failed to load image for cropping'));
+      image.src = imageSrc;
     });
   }, []);
+
 
   // Updated handleCropConfirm for both modes
   const handleCropConfirm = async () => {
@@ -190,13 +209,15 @@ function App() {
       }
       setShowCropper(false);
     } catch (error) {
+      console.error('Crop confirm error:', error); // Log for mobile debugging
       if (editMode) {
-        setProfileError('Error processing image. Please try again.');
+        setProfileError(`Error processing image: ${error.message}. Please try again.`);
       } else {
-        setSignUpError('Error processing image. Please try again.');
+        setSignUpError(`Error processing image: ${error.message}. Please try again.`);
       }
     }
   };
+
 
   // Updated handleCropCancel for both modes
   const handleCropCancel = () => {
@@ -205,14 +226,15 @@ function App() {
       setProfileImageSrc('');
       setProfileLogoFile(null);
       setProfileLogoPreview('');
-      document.getElementById('profile-logo-upload').value = '';
+      if (profileLogoInputRef.current) profileLogoInputRef.current.value = '';
     } else {
       setImageSrc('');
       setLogoFile(null);
       setLogoPreview('');
-      document.getElementById('logo-upload').value = '';
+      if (logoInputRef.current) logoInputRef.current.value = '';
     }
   };
+
 
   // New handler to enter edit mode
   const enterEditMode = () => {
@@ -221,6 +243,7 @@ function App() {
     setProfileLogoPreview(logoUrl || ''); // Use current if exists
     setEditMode(true);
   };
+
 
   // New handler to save profile changes
   const saveProfileChanges = async () => {
@@ -241,22 +264,24 @@ function App() {
       }
       const userId = session.user.id;
       if (profileLogoFile) {
-        // Upload/replace logo
-        const fileName = `${userId}/logo.png`;
+        // Upload/replace logo with unique filename to avoid policy conflicts on existing files
+        const timestamp = Date.now();
+        const fileName = `${userId}/logo-${timestamp}.png`;
         const { error: uploadError } = await supabase.storage
           .from('company-logos')
           .upload(fileName, profileLogoFile, {
             cacheControl: '3600',
-            upsert: true, // Allow overwrite
+            upsert: false, // Use false to ensure insert-only compatibility
           });
         if (uploadError) {
-          setProfileError('Error uploading logo. Please try again.');
+          console.error('Upload error details:', uploadError); // Log for debugging
+          setProfileError(`Error uploading logo: ${uploadError.message || 'Please try again.'}`);
           return;
         }
-        const { data: { publicUrl } } = supabase.storage
+        const { data: publicUrlData } = supabase.storage
           .from('company-logos')
           .getPublicUrl(fileName);
-        newLogoUrl = publicUrl;
+        newLogoUrl = publicUrlData.publicUrl;
       }
       // Update user data
       const { error: updateError } = await supabase
@@ -270,7 +295,8 @@ function App() {
         .select()
         .single();
       if (updateError) {
-        setProfileError('Error saving changes. Please try again.');
+        console.error('Update error details:', updateError); // Log for debugging
+        setProfileError(`Error saving changes: ${updateError.message || 'Please try again.'}`);
         return;
       }
       // Update local state
@@ -283,9 +309,11 @@ function App() {
       setProfileError('');
       showToast('Profile updated successfully!', 'success');
     } catch (error) {
+      console.error('Save profile error:', error); // Log for debugging
       setProfileError('An error occurred. Please try again.');
     }
   };
+
 
   // New handler to cancel edit
   const cancelEdit = () => {
@@ -297,10 +325,12 @@ function App() {
     setProfileError('');
   };
 
+
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 4000);
   };
+
 
   const handleAvatarClick = () => {
     if (!signedIn) {
@@ -311,6 +341,7 @@ function App() {
     setDrawerOpen(false); // Close drawer if open on mobile
   };
 
+
   const handleSettingsClick = () => {
     if (!signedIn) {
       showToast('Please log in first.', 'error');
@@ -319,6 +350,7 @@ function App() {
     setSelected('Settings');
     setDrawerOpen(false); // Close drawer if open on mobile
   };
+
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -362,6 +394,7 @@ function App() {
       setLoginError('An error occurred. Please try again.');
     }
   };
+
 
   const handleSignUp = async (e) => {
     e.preventDefault();
@@ -423,13 +456,14 @@ function App() {
             upsert: false,
           });
         if (uploadError) {
-          setSignUpError('Error uploading logo. Please try again.');
+          console.error('Sign-up upload error details:', uploadError); // Log for debugging
+          setSignUpError(`Error uploading logo: ${uploadError.message || 'Please try again.'}`);
           return;
         }
-        const { data: { publicUrl } } = supabase.storage
+        const { data: publicUrlData } = supabase.storage
           .from('company-logos')
           .getPublicUrl(fileName);
-        logoUrlToSave = publicUrl;
+        logoUrlToSave = publicUrlData.publicUrl;
       }
       const { error: insertError } = await supabase.from('users').insert([
         {
@@ -458,9 +492,11 @@ function App() {
       setLogoFile(null);
       setLogoPreview('');
     } catch (error) {
+      console.error('Sign-up error:', error); // Log for debugging
       setSignUpError('An error occurred. Please try again.');
     }
   };
+
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -477,6 +513,7 @@ function App() {
     showToast('Successfully logged out. See you soon!', 'success');
   };
 
+
   const handleNavClick = (page) => {
     if (!signedIn) {
       const message = isSignUp ? 'Please complete sign up first.' : 'Please log in first.';
@@ -486,6 +523,7 @@ function App() {
     setSelected(page);
     setDrawerOpen(false);
   };
+
 
   return (
     <div className="app-root">
@@ -509,6 +547,7 @@ function App() {
           </div>
         </div>
       </header>
+
 
       <nav className="sidebar-desktop">
         {/* New Dashboard button as first item */}
@@ -555,6 +594,7 @@ function App() {
           <ContactsIcon /> Contacts
         </button>
       </nav>
+
 
       {drawerOpen && (
         <>
@@ -612,6 +652,7 @@ function App() {
           </nav>
         </>
       )}
+
 
       <main className="main-content">
         {!signedIn ? (
@@ -671,19 +712,26 @@ function App() {
                   onChange={(e) => setSignUpCompanyName(e.target.value)}
                   required
                 />
-                {/* Updated logo upload section */}
+                {/* Updated logo upload section with ref for mobile */}
                 <div className="logo-upload">
                   <label htmlFor="logo-upload" className="logo-label">
                     Company Logo (Optional)
                   </label>
                   <input
+                    ref={logoInputRef}
                     id="logo-upload"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png"
                     onChange={handleLogoChange}
                     style={{ display: 'none' }}
                   />
-                  <div className="logo-dropzone" onClick={() => document.getElementById('logo-upload').click()}>
+                  <div 
+                    className="logo-dropzone" 
+                    onClick={() => logoInputRef.current?.click()}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === 'Enter' && logoInputRef.current?.click()}
+                  >
                     {logoPreview ? (
                       <img src={logoPreview} alt="Preview" className="logo-preview" />
                     ) : (
@@ -763,6 +811,7 @@ function App() {
               </div>
             )}
 
+
             {selected === 'Profile' && (
               <div className="profile-card">
                 <h2>Your Profile</h2>
@@ -777,13 +826,20 @@ function App() {
                           Change Logo (Optional)
                         </label>
                         <input
+                          ref={profileLogoInputRef}
                           id="profile-logo-upload"
                           type="file"
-                          accept="image/*"
+                          accept="image/jpeg,image/png"
                           onChange={handleProfileLogoChange}
                           style={{ display: 'none' }}
                         />
-                        <div className="logo-dropzone" onClick={() => document.getElementById('profile-logo-upload').click()}>
+                        <div 
+                          className="logo-dropzone" 
+                          onClick={() => profileLogoInputRef.current?.click()}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => e.key === 'Enter' && profileLogoInputRef.current?.click()}
+                        >
                           {profileLogoPreview ? (
                             <img src={profileLogoPreview} alt="New Preview" className="logo-preview" />
                           ) : (
@@ -880,6 +936,7 @@ function App() {
               </div>
             )}
 
+
             {selected === 'Settings' && (
               <div className="settings-section">
                 <h2>Settings</h2>
@@ -889,6 +946,7 @@ function App() {
           </>
         )}
       </main>
+
 
       {/* Updated Crop Modal - supports both modes */}
       {showCropper && (
@@ -924,6 +982,7 @@ function App() {
         </div>
       )}
 
+
       {toast.show && (
         <div className={`toast ${toast.type}`}>
           <div className="icon">{toast.type === 'success' ? <CheckIcon /> : <CloseIcon />}</div>
@@ -936,5 +995,6 @@ function App() {
     </div>
   );
 }
+
 
 export default App;
