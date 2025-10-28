@@ -4,6 +4,7 @@ import './App.css';
 import { supabase } from './supabaseClient';
 
 // Placeholder icons (no emojis, styled via CSS) - except for eye toggles and settings
+const DashboardIcon = () => <div className="icon-placeholder"></div>; // New icon for Dashboard
 const ProjectsIcon = () => <div className="icon-placeholder"></div>;
 const BiddingsIcon = () => <div className="icon-placeholder"></div>;
 const PublicProjectsIcon = () => <div className="icon-placeholder"></div>;
@@ -15,9 +16,10 @@ const CheckIcon = () => <div className="icon-placeholder"></div>;
 const EyeIcon = () => <div>👁️</div>; // Restored emoji for password toggle
 const EyeOffIcon = () => <div>👁️‍🗨️</div>; // Restored emoji for password toggle
 const SettingsIcon = () => <div className="settings-emoji">⚙️</div>; // Emoji for app bar settings
+const EditIcon = () => <div className="icon-placeholder"></div>; // New icon for edit button
 
 function App() {
-  const [selected, setSelected] = useState('CompanyProjectsListings'); // Default to first item
+  const [selected, setSelected] = useState('Dashboard'); // Updated default to Dashboard
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -48,6 +50,17 @@ function App() {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  // New states for profile edit
+  const [editMode, setEditMode] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [profileLogoFile, setProfileLogoFile] = useState(null); // Separate for profile edit
+  const [profileLogoPreview, setProfileLogoPreview] = useState(''); // Separate for profile edit
+  const [profileImageSrc, setProfileImageSrc] = useState('');
+  const [profileCroppedAreaPixels, setProfileCroppedAreaPixels] = useState(null);
+  const [profileCrop, setProfileCrop] = useState({ x: 0, y: 0 });
+  const [profileZoom, setProfileZoom] = useState(1);
+  const [profileError, setProfileError] = useState('');
 
   useEffect(() => {
     // Inline checkUser logic to avoid ESLint dependency warning
@@ -67,14 +80,39 @@ function App() {
           setCompanyName(userData.company_name);
           setPhone(userData.phone || '');
           setLogoUrl(userData.logo_url || ''); // Fetch logo URL
+          setEditTitle(userData.title || ''); // Pre-fill edit states
+          setEditPhone(userData.phone || '');
           setSignedIn(true);
+          setSelected('Dashboard'); // Updated default to Dashboard
         }
       }
     };
     checkUser();
   }, []); // Empty array for mount-only execution
 
-  // New handler for logo file selection - opens cropper if valid
+  // New handler for logo file selection in profile - opens cropper if valid
+  const handleProfileLogoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        setProfileError('Please select an image file (JPEG or PNG).');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        setProfileError('Image size must be less than 5MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImageSrc(reader.result);
+        setShowCropper(true); // Reuse cropper, but track for profile
+      };
+      reader.readAsDataURL(file);
+      setProfileError('');
+    }
+  };
+
+  // Handler for logo file selection in sign-up
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -96,12 +134,16 @@ function App() {
     }
   };
 
-  // New onCropComplete handler for react-easy-crop
+  // Updated onCropComplete to handle both sign-up and profile
   const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
-    setCroppedAreaPixels(croppedAreaPixels);
-  }, []);
+    if (editMode) {
+      setProfileCroppedAreaPixels(croppedAreaPixels);
+    } else {
+      setCroppedAreaPixels(croppedAreaPixels);
+    }
+  }, [editMode]);
 
-  // New function to generate cropped image as Blob
+  // Updated createCroppedImage for reuse
   const createCroppedImage = useCallback(async (imageSrc, pixelCrop) => {
     const image = new Image();
     image.src = imageSrc;
@@ -127,29 +169,132 @@ function App() {
     });
   }, []);
 
-  // New handler for confirming crop
+  // Updated handleCropConfirm for both modes
   const handleCropConfirm = async () => {
     try {
-      if (!croppedAreaPixels || !imageSrc) return;
-      const croppedImageBlob = await createCroppedImage(imageSrc, croppedAreaPixels);
-      const croppedFile = new File([croppedImageBlob], 'logo.png', { type: 'image/png' });
-      setLogoFile(croppedFile);
-      const previewUrl = URL.createObjectURL(croppedImageBlob);
-      setLogoPreview(previewUrl);
+      let croppedImageBlob, croppedFile, previewUrl;
+      if (editMode) {
+        if (!profileCroppedAreaPixels || !profileImageSrc) return;
+        croppedImageBlob = await createCroppedImage(profileImageSrc, profileCroppedAreaPixels);
+        croppedFile = new File([croppedImageBlob], 'logo.png', { type: 'image/png' });
+        setProfileLogoFile(croppedFile);
+        previewUrl = URL.createObjectURL(croppedImageBlob);
+        setProfileLogoPreview(previewUrl);
+      } else {
+        if (!croppedAreaPixels || !imageSrc) return;
+        croppedImageBlob = await createCroppedImage(imageSrc, croppedAreaPixels);
+        croppedFile = new File([croppedImageBlob], 'logo.png', { type: 'image/png' });
+        setLogoFile(croppedFile);
+        previewUrl = URL.createObjectURL(croppedImageBlob);
+        setLogoPreview(previewUrl);
+      }
       setShowCropper(false);
     } catch (error) {
-      setSignUpError('Error processing image. Please try again.');
+      if (editMode) {
+        setProfileError('Error processing image. Please try again.');
+      } else {
+        setSignUpError('Error processing image. Please try again.');
+      }
     }
   };
 
-  // New handler for canceling crop
+  // Updated handleCropCancel for both modes
   const handleCropCancel = () => {
     setShowCropper(false);
-    setImageSrc('');
-    setLogoFile(null);
-    setLogoPreview('');
-    // Reset file input
-    document.getElementById('logo-upload').value = '';
+    if (editMode) {
+      setProfileImageSrc('');
+      setProfileLogoFile(null);
+      setProfileLogoPreview('');
+      document.getElementById('profile-logo-upload').value = '';
+    } else {
+      setImageSrc('');
+      setLogoFile(null);
+      setLogoPreview('');
+      document.getElementById('logo-upload').value = '';
+    }
+  };
+
+  // New handler to enter edit mode
+  const enterEditMode = () => {
+    setEditTitle(title);
+    setEditPhone(phone);
+    setProfileLogoPreview(logoUrl || ''); // Use current if exists
+    setEditMode(true);
+  };
+
+  // New handler to save profile changes
+  const saveProfileChanges = async () => {
+    if (!editTitle.trim()) {
+      setProfileError('Title is required.');
+      return;
+    }
+    if (!editPhone.trim()) {
+      setProfileError('Phone number is required.');
+      return;
+    }
+    try {
+      let newLogoUrl = logoUrl;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setProfileError('Session expired. Please log in again.');
+        return;
+      }
+      const userId = session.user.id;
+      if (profileLogoFile) {
+        // Upload/replace logo
+        const fileName = `${userId}/logo.png`;
+        const { error: uploadError } = await supabase.storage
+          .from('company-logos')
+          .upload(fileName, profileLogoFile, {
+            cacheControl: '3600',
+            upsert: true, // Allow overwrite
+          });
+        if (uploadError) {
+          setProfileError('Error uploading logo. Please try again.');
+          return;
+        }
+        const { data: { publicUrl } } = supabase.storage
+          .from('company-logos')
+          .getPublicUrl(fileName);
+        newLogoUrl = publicUrl;
+      }
+      // Update user data
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ 
+          title: editTitle, 
+          phone: editPhone, 
+          logo_url: newLogoUrl 
+        })
+        .eq('user_id', userId)
+        .select()
+        .single();
+      if (updateError) {
+        setProfileError('Error saving changes. Please try again.');
+        return;
+      }
+      // Update local state
+      setTitle(editTitle);
+      setPhone(editPhone);
+      setLogoUrl(newLogoUrl);
+      setEditMode(false);
+      setProfileLogoFile(null);
+      setProfileLogoPreview('');
+      setProfileError('');
+      showToast('Profile updated successfully!', 'success');
+    } catch (error) {
+      setProfileError('An error occurred. Please try again.');
+    }
+  };
+
+  // New handler to cancel edit
+  const cancelEdit = () => {
+    setEditMode(false);
+    setEditTitle(title);
+    setEditPhone(phone);
+    setProfileLogoFile(null);
+    setProfileLogoPreview('');
+    setProfileError('');
   };
 
   const showToast = (message, type = 'success') => {
@@ -197,7 +342,7 @@ function App() {
       setEmail(user.email);
       const { data: userData } = await supabase
         .from('users')
-        .select('full_name, title, company_name, phone, logo_url')
+        .select('full_name, title, company_name, phone, logout')
         .eq('user_id', user.id)
         .single();
       if (userData) {
@@ -206,8 +351,10 @@ function App() {
         setCompanyName(userData.company_name);
         setPhone(userData.phone || '');
         setLogoUrl(userData.logo_url || ''); // Fetch logo URL
+        setEditTitle(userData.title || '');
+        setEditPhone(userData.phone || '');
         setSignedIn(true);
-        setSelected('CompanyProjectsListings'); // Redirect to default section
+        setSelected('Dashboard'); // Updated redirect to Dashboard
         setPassword('');
         showToast('Welcome back! Successfully logged in.', 'success');
       }
@@ -325,7 +472,7 @@ function App() {
     setTitle('');
     setPhone('');
     setLogoUrl('');
-    setSelected('CompanyProjectsListings');
+    setSelected('Dashboard'); // Updated default on logout
     setDrawerOpen(false);
     showToast('Successfully logged out. See you soon!', 'success');
   };
@@ -364,6 +511,14 @@ function App() {
       </header>
 
       <nav className="sidebar-desktop">
+        {/* New Dashboard button as first item */}
+        <button
+          className={`nav-btn ${selected === 'Dashboard' ? 'active' : ''}`}
+          onClick={() => handleNavClick('Dashboard')}
+          disabled={!signedIn}
+        >
+          <DashboardIcon /> Dashboard
+        </button>
         <button
           className={`nav-btn ${selected === 'CompanyProjectsListings' ? 'active' : ''}`}
           onClick={() => handleNavClick('CompanyProjectsListings')}
@@ -411,6 +566,14 @@ function App() {
                 <CloseIcon />
               </button>
             </div>
+            {/* New Dashboard item as first in drawer */}
+            <button
+              className={`drawer-item ${selected === 'Dashboard' ? 'active' : ''}`}
+              onClick={() => handleNavClick('Dashboard')}
+              disabled={!signedIn}
+            >
+              <DashboardIcon /> Dashboard
+            </button>
             <button
               className={`drawer-item ${selected === 'CompanyProjectsListings' ? 'active' : ''}`}
               onClick={() => handleNavClick('CompanyProjectsListings')}
@@ -592,7 +755,8 @@ function App() {
           </div>
         ) : (
           <>
-            {['CompanyProjectsListings', 'CompanyBiddings', 'PublicProjectsListings', 'PrivateProjectsListings', 'Contacts'].includes(selected) && (
+            {/* Updated condition to include Dashboard */}
+            {['Dashboard', 'CompanyProjectsListings', 'CompanyBiddings', 'PublicProjectsListings', 'PrivateProjectsListings', 'Contacts'].includes(selected) && (
               <div className="section-placeholder">
                 <h2>{selected.replace(/([A-Z])/g, ' $1').trim()}</h2>
                 <p>Features for {selected} coming soon.</p>
@@ -602,36 +766,117 @@ function App() {
             {selected === 'Profile' && (
               <div className="profile-card">
                 <h2>Your Profile</h2>
-                <div className="profile-avatar">
-                  {logoUrl ? (
-                    <img src={logoUrl} alt="Company Logo" className="profile-logo" />
-                  ) : (
-                    <div className="profile-initial">{companyName.charAt(0).toUpperCase()}</div>
-                  )}
-                </div>
-                <div className="profile-item">
-                  <span className="label">Company Name:</span>
-                  <span className="value">{companyName}</span>
-                </div>
-                <div className="profile-item">
-                  <span className="label">Full Name:</span>
-                  <span className="value">{fullName}</span>
-                </div>
-                <div className="profile-item">
-                  <span className="label">Title:</span>
-                  <span className="value">{title}</span>
-                </div>
-                <div className="profile-item">
-                  <span className="label">Phone:</span>
-                  <span className="value">{phone}</span>
-                </div>
-                <div className="profile-item">
-                  <span className="label">Email:</span>
-                  <span className="value">{email}</span>
-                </div>
-                <button className="profile-logout-btn" onClick={handleLogout}>
-                  <LogoutIcon /> Logout
-                </button>
+                {editMode ? (
+                  // Edit Mode Form
+                  <div className="profile-edit-form">
+                    {profileError && <div className="error-msg">{profileError}</div>}
+                    <div className="profile-avatar-edit">
+                      <img src={profileLogoPreview || logoUrl} alt="Current Logo" className="profile-logo" />
+                      <div className="logo-upload-edit">
+                        <label htmlFor="profile-logo-upload" className="logo-label">
+                          Change Logo (Optional)
+                        </label>
+                        <input
+                          id="profile-logo-upload"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleProfileLogoChange}
+                          style={{ display: 'none' }}
+                        />
+                        <div className="logo-dropzone" onClick={() => document.getElementById('profile-logo-upload').click()}>
+                          {profileLogoPreview ? (
+                            <img src={profileLogoPreview} alt="New Preview" className="logo-preview" />
+                          ) : (
+                            <div className="logo-placeholder">
+                              <div className="logo-icon">📷</div>
+                              <p>Click to upload new logo</p>
+                              <small>JPEG/PNG, max 5MB</small>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="profile-item-edit">
+                      <span className="label">Company Name:</span>
+                      <span className="value">{companyName}</span> {/* Read-only */}
+                    </div>
+                    <div className="profile-item-edit">
+                      <span className="label">Full Name:</span>
+                      <span className="value">{fullName}</span> {/* Read-only */}
+                    </div>
+                    <div className="profile-item-edit">
+                      <label className="label">Title:</label>
+                      <input
+                        type="text"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        className="edit-input"
+                        placeholder="Enter title"
+                      />
+                    </div>
+                    <div className="profile-item-edit">
+                      <label className="label">Phone:</label>
+                      <input
+                        type="tel"
+                        value={editPhone}
+                        onChange={(e) => setEditPhone(e.target.value)}
+                        className="edit-input"
+                        placeholder="Enter phone number"
+                      />
+                    </div>
+                    <div className="profile-item-edit">
+                      <span className="label">Email:</span>
+                      <span className="value">{email}</span> {/* Read-only */}
+                    </div>
+                    <div className="profile-edit-actions">
+                      <button className="edit-cancel-btn" onClick={cancelEdit}>
+                        Cancel
+                      </button>
+                      <button className="edit-save-btn" onClick={saveProfileChanges}>
+                        Save Changes
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  // View Mode
+                  <div>
+                    <div className="profile-avatar">
+                      {logoUrl ? (
+                        <img src={logoUrl} alt="Company Logo" className="profile-logo" />
+                      ) : (
+                        <div className="profile-initial">{companyName.charAt(0).toUpperCase()}</div>
+                      )}
+                    </div>
+                    <div className="profile-item">
+                      <span className="label">Company Name:</span>
+                      <span className="value">{companyName}</span>
+                    </div>
+                    <div className="profile-item">
+                      <span className="label">Full Name:</span>
+                      <span className="value">{fullName}</span>
+                    </div>
+                    <div className="profile-item">
+                      <span className="label">Title:</span>
+                      <span className="value">{title}</span>
+                    </div>
+                    <div className="profile-item">
+                      <span className="label">Phone:</span>
+                      <span className="value">{phone}</span>
+                    </div>
+                    <div className="profile-item">
+                      <span className="label">Email:</span>
+                      <span className="value">{email}</span>
+                    </div>
+                    <div className="profile-actions-row">
+                      <button className="profile-logout-btn" onClick={handleLogout}>
+                        <LogoutIcon /> Logout
+                      </button>
+                      <button className="edit-profile-btn" onClick={enterEditMode}>
+                        <EditIcon /> Edit Profile
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -645,26 +890,26 @@ function App() {
         )}
       </main>
 
-      {/* New Crop Modal */}
+      {/* Updated Crop Modal - supports both modes */}
       {showCropper && (
         <div className="crop-modal">
           <div className="crop-modal-overlay" onClick={handleCropCancel}></div>
           <div className="crop-modal-content">
             <div className="crop-header">
-              <h3>Crop Your Logo</h3>
+              <h3>{editMode ? 'Crop New Logo' : 'Crop Your Logo'}</h3>
               <button className="crop-close" onClick={handleCropCancel}>
                 <CloseIcon />
               </button>
             </div>
             <div className="crop-container">
               <Cropper
-                image={imageSrc}
-                crop={crop}
-                zoom={zoom}
+                image={editMode ? profileImageSrc : imageSrc}
+                crop={editMode ? profileCrop : crop}
+                zoom={editMode ? profileZoom : zoom}
                 aspect={1} // Square for circle
-                onCropChange={setCrop}
+                onCropChange={editMode ? setProfileCrop : setCrop}
                 onCropComplete={onCropComplete}
-                onZoomChange={setZoom}
+                onZoomChange={editMode ? setProfileZoom : setZoom}
               />
             </div>
             <div className="crop-actions">
