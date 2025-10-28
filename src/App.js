@@ -342,7 +342,7 @@ function App() {
       setEmail(user.email);
       const { data: userData } = await supabase
         .from('users')
-        .select('full_name, title, company_name, phone, logout')
+        .select('full_name, title, company_name, phone, logo_url') // Fixed: changed 'logout' to 'logo_url'
         .eq('user_id', user.id)
         .single();
       if (userData) {
