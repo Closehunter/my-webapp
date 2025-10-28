@@ -106,8 +106,8 @@ function App() {
         setProfileError('Please select an image file (JPEG or PNG).');
         return;
       }
-      if (file.size > 15 * 1024 * 1024) { // 15MB limit
-        setProfileError('Image size must be less than 15MB. Please select a smaller file.');
+      if (file.size > 50 * 1024 * 1024) { // Increased to 50MB limit
+        setProfileError('Image size must be less than 50MB. Please select a smaller file.');
         return;
       }
       const reader = new FileReader();
@@ -129,8 +129,8 @@ function App() {
         setSignUpError('Please select an image file (JPEG or PNG).');
         return;
       }
-      if (file.size > 15 * 1024 * 1024) { // 15MB limit
-        setSignUpError('Image size must be less than 15MB. Please select a smaller file.');
+      if (file.size > 50 * 1024 * 1024) { // Increased to 50MB limit
+        setSignUpError('Image size must be less than 50MB. Please select a smaller file.');
         return;
       }
       const reader = new FileReader();
@@ -195,9 +195,9 @@ function App() {
       if (editMode) {
         if (!profileCroppedAreaPixels || !profileImageSrc) return;
         croppedImageBlob = await createCroppedImage(profileImageSrc, profileCroppedAreaPixels);
-        // New: Check cropped blob size
-        if (croppedImageBlob.size > 15 * 1024 * 1024) {
-          setProfileError('Cropped image exceeds 15MB limit. Please crop a smaller area or select a smaller original image.');
+        // Updated: Check cropped blob size to 50MB
+        if (croppedImageBlob.size > 50 * 1024 * 1024) {
+          setProfileError('Cropped image exceeds 50MB limit. Please crop a smaller area or select a smaller original image.');
           return;
         }
         console.log('Profile cropped blob size:', croppedImageBlob.size / (1024 * 1024), 'MB'); // Debug log
@@ -208,9 +208,9 @@ function App() {
       } else {
         if (!croppedAreaPixels || !imageSrc) return;
         croppedImageBlob = await createCroppedImage(imageSrc, croppedAreaPixels);
-        // New: Check cropped blob size
-        if (croppedImageBlob.size > 15 * 1024 * 1024) {
-          setSignUpError('Cropped image exceeds 15MB limit. Please crop a smaller area or select a smaller original image.');
+        // Updated: Check cropped blob size to 50MB
+        if (croppedImageBlob.size > 50 * 1024 * 1024) {
+          setSignUpError('Cropped image exceeds 50MB limit. Please crop a smaller area or select a smaller original image.');
           return;
         }
         console.log('Sign-up cropped blob size:', croppedImageBlob.size / (1024 * 1024), 'MB'); // Debug log
@@ -738,7 +738,7 @@ function App() {
                   onChange={(e) => setSignUpCompanyName(e.target.value)}
                   required
                 />
-                {/* Updated logo upload section with ref for mobile and 15MB limit */}
+                {/* Updated logo upload section with ref for mobile and 50MB limit */}
                 <div className="logo-upload">
                   <label htmlFor="logo-upload" className="logo-label">
                     Company Logo (Optional)
@@ -764,7 +764,7 @@ function App() {
                       <div className="logo-placeholder">
                         <div className="logo-icon">📷</div>
                         <p>Click to upload or drag and drop your company logo</p>
-                        <small>JPEG/PNG, max 15MB</small>
+                        <small>JPEG/PNG, max 50MB</small>
                       </div>
                     )}
                   </div>
@@ -872,7 +872,7 @@ function App() {
                             <div className="logo-placeholder">
                               <div className="logo-icon">📷</div>
                               <p>Click to upload new logo</p>
-                              <small>JPEG/PNG, max 15MB</small>
+                              <small>JPEG/PNG, max 50MB</small>
                             </div>
                           )}
                         </div>
